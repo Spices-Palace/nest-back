@@ -79,6 +79,9 @@ export class BillController {
     }> = [];
     
     for (const bill of bills) {
+      // Use finalTotal for total sales calculation
+      totalSales += Number(bill.finalTotal);
+      
       if (bill.payments && Array.isArray(bill.payments)) {
         for (const payment of bill.payments) {
           // Add to breakdown
@@ -96,11 +99,14 @@ export class BillController {
             billId: bill.id
           });
         }
+      } else {
+        console.log(`Bill ${bill.billNo} has no payments or payments is not an array:`, bill.payments);
       }
     }
     
-    // Calculate total sales from payment breakdown
-    totalSales = paymentBreakdown.cash + paymentBreakdown.gpay + paymentBreakdown.card + paymentBreakdown.other;
+    console.log('Payment breakdown:', paymentBreakdown);
+    console.log('Total sales from finalTotal:', totalSales);
+    console.log('All payments count:', allPayments.length);
     
     return { 
       totalSales, 
