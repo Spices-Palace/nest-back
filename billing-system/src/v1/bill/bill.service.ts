@@ -87,6 +87,10 @@ export class BillService {
         totalSGST: createBillDto.totalSGST,
         grandTotal: createBillDto.grandTotal,
         status: createBillDto.status || BillStatus.COMPLETED,
+        discountType: createBillDto.discountType,
+        discountValue: createBillDto.discountValue,
+        discountAmount: createBillDto.discountAmount,
+        finalTotal: createBillDto.finalTotal,
       });
 
       // Map and create BillPayment entities from dto.payments and associate them with the bill
