@@ -278,8 +278,8 @@ export class BillService {
           totalCommission: 0,
         };
       }
-      // Commission type 1: grandTotal * commissionRate / 100
-      const commission1 = Number(bill.grandTotal) * (Number(bill.salesman.commissionRate) / 100);
+      // Commission type 1: finalTotal * commissionRate / 100
+      const commission1 = Number(bill.finalTotal || bill.grandTotal) * (Number(bill.salesman.commissionRate) / 100);
       // Commission type 2: 25% of (total priceIncrease - discountAmount if both present)
       let totalPriceIncrease = 0;
       let hasPriceIncrease = false;
@@ -302,6 +302,7 @@ export class BillService {
         billId: bill.id,
         billNo: bill.billNo,
         grandTotal: Number(bill.grandTotal),
+        finalTotal: Number(bill.finalTotal || bill.grandTotal),
         commission1,
         commission2,
         totalCommission,
