@@ -94,9 +94,15 @@ export class BillService {
       });
 
       // Map and create BillPayment entities from dto.payments and associate them with the bill
-      bill.payments = createBillDto.payments.map(paymentDto => this.billPaymentRepository.create(paymentDto));
+      const payments = createBillDto.payments.map(paymentDto => this.billPaymentRepository.create(paymentDto));
 
       const savedBill = await queryRunner.manager.save(bill);
+
+      // Save payments and associate them with the bill
+      for (const payment of payments) {
+        payment.bill = Array.isArray(savedBill) ? savedBill[0] : savedBill;
+        await queryRunner.manager.save(payment);
+      }
 
       // Create bill items and update inventory
       const billItems: BillItem[] = [];
@@ -157,7 +163,7 @@ export class BillService {
     const where = companyId ? { company: { id: companyId } } : {};
     return this.billRepository.find({
       where,
-      relations: ['company', 'salesman', 'items', 'items.product'],
+      relations: ['company', 'salesman', 'items', 'items.product', 'payments'],
       order: { createdAt: 'DESC' },
     });
   }
@@ -165,7 +171,7 @@ export class BillService {
   async findOne(id: string): Promise<Bill> {
     const bill = await this.billRepository.findOne({
       where: { id },
-      relations: ['company', 'salesman', 'items', 'items.product'],
+      relations: ['company', 'salesman', 'items', 'items.product', 'payments'],
     });
     if (!bill) {
       throw new NotFoundException('Bill not found');
@@ -176,7 +182,7 @@ export class BillService {
   async findByBillNo(billNo: string): Promise<Bill> {
     const bill = await this.billRepository.findOne({
       where: { billNo },
-      relations: ['company', 'salesman', 'items', 'items.product'],
+      relations: ['company', 'salesman', 'items', 'items.product', 'payments'],
     });
     if (!bill) {
       throw new NotFoundException('Bill not found');
@@ -233,7 +239,7 @@ export class BillService {
         company: { id: companyId },
         date: Between(startOfDay, endOfDay),
       },
-      relations: ['company', 'salesman', 'items', 'items.product'],
+      relations: ['company', 'salesman', 'items', 'items.product', 'payments'],
       order: { createdAt: 'DESC' },
     });
   }
