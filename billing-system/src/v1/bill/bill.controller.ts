@@ -73,9 +73,6 @@ export class BillController {
     const allPayments = [];
     
     for (const bill of bills) {
-      // Use only finalTotal (after discount) for accurate sales reporting
-      totalSales += Number(bill.finalTotal);
-      
       if (bill.payments && Array.isArray(bill.payments)) {
         for (const payment of bill.payments) {
           // Add to breakdown
@@ -95,6 +92,10 @@ export class BillController {
         }
       }
     }
+    
+    // Calculate total sales from payment breakdown
+    totalSales = paymentBreakdown.cash + paymentBreakdown.gpay + paymentBreakdown.card + paymentBreakdown.other;
+    
     return { 
       totalSales, 
       paymentBreakdown,
