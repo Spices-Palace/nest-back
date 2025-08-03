@@ -70,18 +70,34 @@ export class BillController {
     let totalSales = 0;
     // Note: payment.method is a string comparison for compatibility with enum values
     const paymentBreakdown = { cash: 0, gpay: 0, card: 0, other: 0 };
+    const allPayments = [];
+    
     for (const bill of bills) {
-      totalSales += Number(bill.grandTotal);
+      totalSales += Number(bill.finalTotal || bill.grandTotal);
       if (bill.payments && Array.isArray(bill.payments)) {
         for (const payment of bill.payments) {
+          // Add to breakdown
           if (payment.method === 'Cash') paymentBreakdown.cash += Number(payment.amount);
           else if (payment.method === 'UPI') paymentBreakdown.gpay += Number(payment.amount);
           else if (payment.method === 'Card') paymentBreakdown.card += Number(payment.amount);
           else paymentBreakdown.other += Number(payment.amount);
+          
+          // Add to detailed payments list
+          allPayments.push({
+            billNo: bill.billNo,
+            customerName: bill.customerName,
+            method: payment.method,
+            amount: Number(payment.amount),
+            billId: bill.id
+          });
         }
       }
     }
-    return { totalSales, paymentBreakdown };
+    return { 
+      totalSales, 
+      paymentBreakdown,
+      allPayments 
+    };
   }
 
   // Move this to the bottom to avoid route conflicts
