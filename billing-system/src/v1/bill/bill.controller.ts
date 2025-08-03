@@ -70,7 +70,13 @@ export class BillController {
     let totalSales = 0;
     // Note: payment.method is a string comparison for compatibility with enum values
     const paymentBreakdown = { cash: 0, gpay: 0, card: 0, other: 0 };
-    const allPayments = [];
+    const allPayments: Array<{
+      billNo: string;
+      customerName: string;
+      method: string;
+      amount: number;
+      billId: string;
+    }> = [];
     
     for (const bill of bills) {
       if (bill.payments && Array.isArray(bill.payments)) {
