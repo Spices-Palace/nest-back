@@ -132,9 +132,14 @@ export class BillService {
 
         billItems.push(billItem);
 
-        // Update product inventory
-        product.quantity -= itemDto.quantity;
-        await queryRunner.manager.save(product);
+        // Update product inventory - fetch fresh product instance
+        const productToUpdate = await this.productRepository.findOne({ 
+          where: { id: itemDto.productId } 
+        });
+        if (productToUpdate) {
+          productToUpdate.quantity -= itemDto.quantity;
+          await queryRunner.manager.save(productToUpdate);
+        }
       }
 
       // Save all bill items
