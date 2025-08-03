@@ -94,7 +94,7 @@ export class BillController {
     }
     
     // Calculate total sales from payment breakdown
-    totalSales = paymentBreakdown.cash + paymentBreakdown.gpay + paymentBreakdown.card ;
+    totalSales = paymentBreakdown.cash + paymentBreakdown.gpay + paymentBreakdown.card + paymentBreakdown.other;
     
     return { 
       totalSales, 
