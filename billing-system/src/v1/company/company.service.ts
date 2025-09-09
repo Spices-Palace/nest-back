@@ -51,6 +51,12 @@ export class CompanyService {
     return this.companyRepository.find();
   }
 
+  async findOne(id: string): Promise<Company> {
+    const company = await this.companyRepository.findOne({ where: { id } });
+    if (!company) throw new NotFoundException('Company not found');
+    return company;
+  }
+
   async login(loginDto: LoginCompanyDto) {
     const { companyName, password, role } = loginDto;
     const company = await this.companyRepository.findOne({

@@ -27,16 +27,27 @@ export class CompanyController {
 
   @Public()
   @Post()
-  async create(
-    @Body(ValidationPipe) createCompanyDto: CreateCompanyDto,
-  ): Promise<Company> {
+  async create(@Body(ValidationPipe) createCompanyDto: CreateCompanyDto): Promise<Company> {
     return this.companyService.create(createCompanyDto);
   }
   @Public()
   @Get()
-  async findAll(): Promise<{ id: string; companyName: string }[]> {
+  async findAll(): Promise<
+    { id: string; companyName: string; gstNumber?: string | null; address?: string | null }[]
+  > {
     const companies = await this.companyService.findAll();
-    return companies.map(({ id, companyName }) => ({ id, companyName }));
+    return companies.map(({ id, companyName, gstNumber, address }) => ({
+      id,
+      companyName,
+      gstNumber,
+      address,
+    }));
+  }
+
+  @Public()
+  @Get(':id')
+  async findOne(@Param('id') id: string): Promise<Company> {
+    return this.companyService.findOne(id);
   }
 
   @Public()
