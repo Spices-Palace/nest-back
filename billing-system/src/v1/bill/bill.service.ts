@@ -34,8 +34,8 @@ export class BillService {
 
     try {
       // Validate company exists
-      const company = await this.companyRepository.findOne({ 
-        where: { id: createBillDto.companyId } 
+      const company = await this.companyRepository.findOne({
+        where: { id: createBillDto.companyId },
       });
       if (!company) {
         throw new NotFoundException('Company not found');
@@ -44,8 +44,8 @@ export class BillService {
       // Validate salesman exists if provided
       let salesman: Salesman | null = null;
       if (createBillDto.salesmanId) {
-        salesman = await this.salesmanRepository.findOne({ 
-          where: { id: createBillDto.salesmanId } 
+        salesman = await this.salesmanRepository.findOne({
+          where: { id: createBillDto.salesmanId },
         });
         if (!salesman) {
           throw new NotFoundException('Salesman not found');
@@ -53,24 +53,31 @@ export class BillService {
       }
 
       // Validate products and check inventory
-      const productIds = createBillDto.items.map(item => item.productId);
-      const products = await this.productRepository.find({ 
-        where: productIds.map(id => ({ id })) 
+      const productIds = createBillDto.items.map((item) => item.productId);
+      const uniqueProductIds = [...new Set(productIds)]; // Remove duplicates
+      const products = await this.productRepository.find({
+        where: uniqueProductIds.map((id) => ({ id })),
       });
 
-      if (products.length !== productIds.length) {
+      if (products.length !== uniqueProductIds.length) {
         throw new NotFoundException('One or more products not found');
       }
 
-      // Check inventory availability
+      // Check inventory availability - group by product ID to sum quantities
+      const productQuantityMap = new Map<string, number>();
       for (const item of createBillDto.items) {
-        const product = products.find(p => p.id === item.productId);
+        const currentQuantity = productQuantityMap.get(item.productId) || 0;
+        productQuantityMap.set(item.productId, currentQuantity + item.quantity);
+      }
+
+      for (const [productId, totalQuantity] of productQuantityMap.entries()) {
+        const product = products.find((p) => p.id === productId);
         if (!product) {
-          throw new NotFoundException(`Product with ID ${item.productId} not found`);
+          throw new NotFoundException(`Product with ID ${productId} not found`);
         }
-        if (product.quantity < item.quantity) {
+        if (product.quantity < totalQuantity) {
           throw new BadRequestException(
-            `Insufficient inventory for product ${product.name}. Available: ${product.quantity}, Requested: ${item.quantity}`
+            `Insufficient inventory for product ${product.name}. Available: ${product.quantity}, Requested: ${totalQuantity}`,
           );
         }
       }
@@ -94,7 +101,9 @@ export class BillService {
       });
 
       // Map and create BillPayment entities from dto.payments and associate them with the bill
-      const payments = createBillDto.payments.map(paymentDto => this.billPaymentRepository.create(paymentDto));
+      const payments = createBillDto.payments.map((paymentDto) =>
+        this.billPaymentRepository.create(paymentDto),
+      );
 
       const savedBill = await queryRunner.manager.save(bill);
 
@@ -107,7 +116,7 @@ export class BillService {
       // Create bill items and update inventory
       const billItems: BillItem[] = [];
       for (const itemDto of createBillDto.items) {
-        const product = products.find(p => p.id === itemDto.productId);
+        const product = products.find((p) => p.id === itemDto.productId);
         if (!product) {
           throw new NotFoundException(`Product with ID ${itemDto.productId} not found`);
         }
@@ -117,8 +126,8 @@ export class BillService {
           bill: Array.isArray(savedBill) ? savedBill[0] : savedBill,
           product,
           productName: itemDto.productName,
-          originalBarcode: itemDto.originalBarcode,
-          saleBarcode: itemDto.saleBarcode,
+          originalBarcode: itemDto.originalBarcode || itemDto.barcode || '',
+          saleBarcode: itemDto.saleBarcode || itemDto.barcode || '',
           productType: itemDto.productType,
           unit: itemDto.unit,
           originalPrice: itemDto.originalPrice,
@@ -132,18 +141,22 @@ export class BillService {
 
         billItems.push(billItem);
 
-        // Update product inventory - fetch fresh product instance
-        const productToUpdate = await this.productRepository.findOne({ 
-          where: { id: itemDto.productId } 
-        });
-        if (productToUpdate) {
-          productToUpdate.quantity -= itemDto.quantity;
-          await queryRunner.manager.save(productToUpdate);
-        }
+        // Note: Inventory will be updated after all items are processed
       }
 
       // Save all bill items
       await queryRunner.manager.save(billItems);
+
+      // Update product inventory - reduce quantities based on total usage
+      for (const [productId, totalQuantity] of productQuantityMap.entries()) {
+        const productToUpdate = await this.productRepository.findOne({
+          where: { id: productId },
+        });
+        if (productToUpdate) {
+          productToUpdate.quantity -= totalQuantity;
+          await queryRunner.manager.save(productToUpdate);
+        }
+      }
 
       await queryRunner.commitTransaction();
 

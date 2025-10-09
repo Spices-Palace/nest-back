@@ -1,4 +1,4 @@
-import { IsString, IsUUID, IsNumber } from 'class-validator';
+import { IsString, IsUUID, IsNumber, IsOptional } from 'class-validator';
 
 export class CreateBillItemDto {
   @IsUUID()
@@ -8,10 +8,16 @@ export class CreateBillItemDto {
   productName: string;
 
   @IsString()
-  originalBarcode: string;
+  @IsOptional()
+  originalBarcode?: string;
 
   @IsString()
-  saleBarcode: string;
+  @IsOptional()
+  saleBarcode?: string;
+
+  @IsString()
+  @IsOptional()
+  barcode?: string;
 
   @IsString()
   productType: string;
