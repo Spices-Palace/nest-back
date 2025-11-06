@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { V1Module } from './v1/v1.module';
+import { ScheduleTaskModule } from './schedule/schedule.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { V1Module } from './v1/v1.module';
       inject: [ConfigService],
     }),
     V1Module,
+    ScheduleTaskModule,
   ],
   controllers: [AppController],
   providers: [AppService],
